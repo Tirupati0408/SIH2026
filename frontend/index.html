@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ResiliNER | AI Landslide Early Warning & Command Platform</title>
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Leaflet GIS CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  
+  <!-- Leaflet GIS JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  
+  <!-- Custom Stylesheet -->
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="dark-theme">
+  <!-- Top Navigation Header -->
+  <header class="app-header">
+    <div class="brand-section">
+      <div class="logo-icon">
+        <i class="fa-solid fa-mountain-city"></i>
+        <div class="logo-pulse"></div>
+      </div>
+      <div class="brand-titles">
+        <div class="brand-name">Resili<span>NER</span> <span class="badge-ai">AI 2.0</span></div>
+        <div class="brand-subtitle">North Eastern Region Real-Time Landslide Early Warning & Disaster Response</div>
+      </div>
+    </div>
+
+    <!-- Header Actions & Controls -->
+    <div class="header-controls">
+      <!-- Live Regional Status -->
+      <div class="status-pill status-danger">
+        <span class="pulse-dot"></span>
+        <span id="region-status-text">CRITICAL MONSOON WARNING: SHILLONG & GUWAHATI CORRIDOR</span>
+      </div>
+
+      <!-- Real Live GPS Location Button -->
+      <button id="live-location-btn" class="btn btn-primary" title="Detect your real current GPS location & fetch live weather">
+        <i class="fa-solid fa-location-crosshairs"></i> Locate Me (Live GPS)
+      </button>
+
+      <!-- Language Selector -->
+      <div class="control-group">
+        <i class="fa-solid fa-language icon-label"></i>
+        <select id="lang-select" class="custom-select">
+          <option value="en" selected>English (EN)</option>
+          <option value="as">অসমীয়া (Assamese)</option>
+          <option value="bn">বাংলা (Bengali)</option>
+          <option value="hi">हिन्दी (Hindi)</option>
+        </select>
+      </div>
+
+      <!-- Offline Mode Toggle -->
+      <div class="offline-toggle-container" title="Simulate Remote Low-Bandwidth / Offline Sync">
+        <label class="switch">
+          <input type="checkbox" id="offline-toggle">
+          <span class="slider round"></span>
+        </label>
+        <span class="toggle-label" id="offline-label"><i class="fa-solid fa-wifi"></i> Online</span>
+      </div>
+
+      <!-- Emergency Audio Siren Button -->
+      <button id="siren-btn" class="btn btn-warning-glow" title="Test Emergency Voice Warning System">
+        <i class="fa-solid fa-volume-high"></i> Siren Test
+      </button>
+
+      <!-- Live Clock -->
+      <div class="live-clock">
+        <div id="clock-time">14:48:00</div>
+        <div id="clock-date">IST | Sep 5, 2026</div>
+      </div>
+    </div>
+  </header>
+
+  <div class="demo-notice" role="note">
+    DEMO ONLY — Sample data and simulated predictions; no emergency alerts or responder dispatches are sent.
+  </div>
+
+  <!-- Top Metrics Bar -->
+  <div class="metrics-grid">
+    <div class="metric-card card-risk">
+      <div class="metric-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
+      <div class="metric-info">
+        <span class="metric-label">High-Risk Zones</span>
+        <span class="metric-value" id="kpi-risk-count">14 Hotspots</span>
+        <span class="metric-sub text-danger"><i class="fa-solid fa-arrow-up"></i> +3 in last 6 hrs</span>
+      </div>
+    </div>
+
+    <div class="metric-card card-moisture">
+      <div class="metric-icon"><i class="fa-solid fa-droplet"></i></div>
+      <div class="metric-info">
+        <span class="metric-label">Avg Soil Saturation</span>
+        <span class="metric-value" id="kpi-moisture">86.4%</span>
+        <span class="metric-sub text-warning">Threshold: >80% Liquefaction</span>
+      </div>
+    </div>
+
+    <div class="metric-card card-rain">
+      <div class="metric-icon"><i class="fa-solid fa-cloud-showers-heavy"></i></div>
+      <div class="metric-info">
+        <span class="metric-label">24h Rainfall (NER)</span>
+        <span class="metric-value" id="kpi-rainfall">148.5 mm</span>
+        <span class="metric-sub text-danger">Heavy Downpour Alert</span>
+      </div>
+    </div>
+
+    <div class="metric-card card-roads">
+      <div class="metric-icon"><i class="fa-solid fa-road-barrier"></i></div>
+      <div class="metric-info">
+        <span class="metric-label">Road Blockages</span>
+        <span class="metric-value" id="kpi-roads">3 Highways</span>
+        <span class="metric-sub text-danger">NH-6 (Guwahati-Shillong) Blocked</span>
+      </div>
+    </div>
+
+    <div class="metric-card card-reports">
+      <div class="metric-icon"><i class="fa-solid fa-camera"></i></div>
+      <div class="metric-info">
+        <span class="metric-label">Citizen Field Reports</span>
+        <span class="metric-value" id="kpi-reports">32 Geo-Tagged</span>
+        <span class="metric-sub text-accent"><i class="fa-solid fa-check-double"></i> 26 AI Verified</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Container Layout -->
+  <main class="main-layout">
+    <!-- Left Navigation Bar -->
+    <aside class="sidebar-nav">
+      <button class="nav-item active" data-tab="tab-gis">
+        <i class="fa-solid fa-earth-asia"></i>
+        <span>GIS Map Center</span>
+      </button>
+      <button class="nav-item" data-tab="tab-ai-sim">
+        <i class="fa-solid fa-microchip"></i>
+        <span>AI Risk Simulator</span>
+      </button>
+      <button class="nav-item" data-tab="tab-crowd">
+        <i class="fa-solid fa-cloud-arrow-up"></i>
+        <span>Geo Field Reports</span>
+      </button>
+      <button class="nav-item" data-tab="tab-triage">
+        <i class="fa-solid fa-truck-medical"></i>
+        <span>Emergency Triage</span>
+      </button>
+
+      <button class="nav-item" data-tab="tab-broadcast">
+        <i class="fa-solid fa-bullhorn"></i>
+        <span>Alert Broadcast</span>
+      </button>
+      <button class="nav-item" data-tab="tab-analytics">
+        <i class="fa-solid fa-chart-line"></i>
+        <span>Risk Analytics</span>
+      </button>
+
+      <div class="sidebar-footer">
+        <div class="system-health">
+          <i class="fa-solid fa-satellite-dish pulse-icon"></i>
+          <div>
+            <div class="health-title">ISRO Bhuvan Sync</div>
+            <div class="health-sub">Telemetry Active (10s)</div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Content Workspace -->
+    <section class="content-area">
+      
+      <!-- TAB 1: GIS COMMAND CENTER -->
+      <div id="tab-gis" class="tab-panel active">
+        <div class="gis-container">
+          <div class="gis-toolbar">
+            <div class="toolbar-title">
+              <i class="fa-solid fa-map-location-dot"></i> Real-Time Landslide GIS Heatmap & Highway Network
+              <span id="live-gps-badge" class="badge-ai" style="display:none; background: rgba(16, 185, 129, 0.2); color: #10b981; border-color: #10b981;">
+                <i class="fa-solid fa-satellite"></i> GPS Active
+              </span>
+            </div>
+            <div class="layer-toggles">
+              <label class="layer-btn active" id="layer-risk-btn">
+                <input type="checkbox" id="chk-risk-layer" checked> Risk Heatmap
+              </label>
+              <label class="layer-btn active" id="layer-roads-btn">
+                <input type="checkbox" id="chk-roads-layer" checked> Highway Status
+              </label>
+              <label class="layer-btn active" id="layer-sensors-btn">
+                <input type="checkbox" id="chk-sensors-layer" checked> IoT Sensors
+              </label>
+              <label class="layer-btn active" id="layer-reports-btn">
+                <input type="checkbox" id="chk-reports-layer" checked> Field Uploads
+              </label>
+            </div>
+          </div>
+
+          <div id="map-viewport" class="map-viewport"></div>
+
+          <!-- Map Legend Bar -->
+          <div class="map-legend">
+            <span class="legend-item"><span class="legend-dot dot-critical"></span> High Susceptibility (>80%)</span>
+            <span class="legend-item"><span class="legend-dot dot-warning"></span> Moderate Risk (50-80%)</span>
+            <span class="legend-item"><span class="legend-dot dot-safe"></span> Low Risk (<50%)</span>
+            <span class="legend-item"><span class="legend-line line-blocked"></span> Blocked Highway</span>
+            <span class="legend-item"><span class="legend-line line-clear"></span> Clear Evacuation Route</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 2: AI RISK PREDICTION SIMULATOR -->
+      <div id="tab-ai-sim" class="tab-panel">
+        <div class="panel-header">
+          <h2><i class="fa-solid fa-brain text-accent"></i> AI Landslide Susceptibility Risk Engine</h2>
+          <p>Adjust environmental parameters to simulate real-time landslide risk calculations powered by Random Forest & LSTM multi-factor regression models.</p>
+        </div>
+
+        <div class="sim-grid">
+          <!-- Parameter Sliders -->
+          <div class="glass-card sim-controls">
+            <h3><i class="fa-solid fa-sliders"></i> Environmental Input Parameters</h3>
+
+            <div class="slider-group">
+              <div class="slider-header">
+                <label><i class="fa-solid fa-cloud-showers-heavy"></i> 24h Cumulative Rainfall (mm)</label>
+                <span class="slider-val" id="val-rain">140 mm</span>
+              </div>
+              <input type="range" id="slider-rain" min="10" max="350" value="140" class="sim-slider">
+              <span class="slider-desc">Monsoon cloudburst threshold: >120 mm/24h</span>
+            </div>
+
+            <div class="slider-group">
+              <div class="slider-header">
+                <label><i class="fa-solid fa-droplet"></i> Soil Moisture Saturation (%)</label>
+                <span class="slider-val" id="val-soil">85 %</span>
+              </div>
+              <input type="range" id="slider-soil" min="20" max="100" value="85" class="sim-slider">
+              <span class="slider-desc">Liquefaction point occurs at >80% saturation</span>
+            </div>
+
+            <div class="slider-group">
+              <div class="slider-header">
+                <label><i class="fa-solid fa-mountain"></i> Terrain Slope Angle (°)</label>
+                <span class="slider-val" id="val-slope">42 °</span>
+              </div>
+              <input type="range" id="slider-slope" min="10" max="65" value="42" class="sim-slider">
+              <span class="slider-desc">Critical hill cutting slope: >35° incline</span>
+            </div>
+
+            <div class="slider-group">
+              <div class="slider-header">
+                <label><i class="fa-solid fa-volcano"></i> Seismic & Fault Line Proximity (km)</label>
+                <span class="slider-val" id="val-fault">8 km</span>
+              </div>
+              <input type="range" id="slider-fault" min="1" max="50" value="8" class="sim-slider">
+              <span class="slider-desc">Proximity to active NER tectonic thrust line</span>
+            </div>
+          </div>
+
+          <!-- AI Output & Factor Breakdown -->
+          <div class="glass-card sim-output">
+            <h3><i class="fa-solid fa-chart-pie"></i> Real-Time AI Prediction Output</h3>
+            
+            <div class="risk-gauge-container">
+              <div class="gauge-circle" id="gauge-circle" style="background: conic-gradient(#ef4444 0% 88%, rgba(255,255,255,0.1) 88% 100%);">
+                <div class="gauge-inner">
+                  <span class="gauge-score" id="gauge-score">88%</span>
+                  <span class="gauge-status text-danger" id="gauge-status">HIGH RISK</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="prediction-details">
+              <h4>Model Decision Matrix (XGBoost + LSTM)</h4>
+              <div class="factor-bar-group">
+                <div class="factor-header">
+                  <span>Soil Liquefaction Saturation</span>
+                  <span class="text-danger" id="w-soil">Weight: 42%</span>
+                </div>
+                <div class="progress-bar"><div class="progress-fill fill-danger" id="bar-soil" style="width: 85%;"></div></div>
+              </div>
+
+              <div class="factor-bar-group">
+                <div class="factor-header">
+                  <span>Precipitation Hydro-Load</span>
+                  <span class="text-danger" id="w-rain">Weight: 33%</span>
+                </div>
+                <div class="progress-bar"><div class="progress-fill fill-warning" id="bar-rain" style="width: 70%;"></div></div>
+              </div>
+
+              <div class="factor-bar-group">
+                <div class="factor-header">
+                  <span>Slope Shear Stress Angle</span>
+                  <span class="text-warning" id="w-slope">Weight: 18%</span>
+                </div>
+                <div class="progress-bar"><div class="progress-fill fill-accent" id="bar-slope" style="width: 65%;"></div></div>
+              </div>
+
+              <div class="ai-recommendation" id="ai-rec-box">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+                <div>
+                  <strong>Automated Early Warning Trigger:</strong> High probability of slope failure within <strong>4 to 8 hours</strong> along Shillong Plateau & NH-6. Recommend immediate evacuation of 3 downhill settlements.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 3: CROWDSOURCED GEO FIELD REPORTS -->
+      <div id="tab-crowd" class="tab-panel">
+        <div class="panel-header">
+          <h2><i class="fa-solid fa-camera-retro text-accent"></i> Crowdsourced Citizen & Field Officer Geo-Portal</h2>
+          <p>Upload photos/videos of roadside slope cracks, mudflows, or debris blockages. Integrated Computer Vision AI auto-detects crack severity and tags GPS coordinates.</p>
+        </div>
+
+        <div class="crowd-grid">
+          <!-- Upload Form Container -->
+          <div class="glass-card upload-card">
+            <h3><i class="fa-solid fa-cloud-arrow-up"></i> Submit Incident Field Report</h3>
+            
+            <div class="upload-dropzone" id="dropzone" role="button" tabindex="0" aria-label="Choose an incident image">
+              <i class="fa-solid fa-images drop-icon"></i>
+              <p>Drag & Drop an incident photo here</p>
+              <span>or click to choose an image for a local preview</span>
+              <input type="file" id="file-input" accept="image/*" style="display:none;">
+            </div>
+
+            <!-- Preset Sample Upload Buttons -->
+            <div class="preset-samples">
+              <span class="preset-title">Or test with preset hackathon samples:</span>
+              <div class="preset-btn-group">
+                <button class="btn btn-outline" id="sample-crack-btn">
+                  <i class="fa-solid fa-volcano"></i> Major Slope Crack (NH-6)
+                </button>
+                <button class="btn btn-outline" id="sample-block-btn">
+                  <i class="fa-solid fa-road-barrier"></i> Highway Mudslide Blockage
+                </button>
+                <button class="btn btn-outline" id="sample-subsidence-btn">
+                  <i class="fa-solid fa-house-crack"></i> Village Slope Movement
+                </button>
+              </div>
+            </div>
+
+            <!-- Upload Meta Form -->
+            <div class="form-grid">
+              <div class="form-group">
+                <label>Observer Name / Field ID</label>
+                <input type="text" id="report-author" class="custom-input" value="Officer K. Sharma (SDRF Assam)">
+              </div>
+              <div class="form-group">
+                <label>Location / Nearest Landmark</label>
+                <input type="text" id="report-location" class="custom-input" value="Km 42, Guwahati-Shillong Highway (NH-6)">
+              </div>
+              <div class="form-group">
+                <label>Latitude Coordinates</label>
+                <input type="text" id="report-lat" class="custom-input" value="25.5788 N">
+              </div>
+              <div class="form-group">
+                <label>Longitude Coordinates</label>
+                <input type="text" id="report-lng" class="custom-input" value="91.8933 E">
+              </div>
+            </div>
+
+            <button id="submit-report-btn" class="btn btn-primary btn-block">
+              <i class="fa-solid fa-microchip"></i> Run AI Vision Analysis & Dispatch Ticket
+            </button>
+          </div>
+
+          <!-- Preview & AI Vision Classification Result -->
+          <div class="glass-card preview-card">
+            <h3><i class="fa-solid fa-eye"></i> AI Computer Vision Inspection</h3>
+            
+            <div class="image-preview-container">
+              <img id="preview-img" src="https://images.unsplash.com/photo-1541888946425-d0fbb186a5b7?q=80&w=800&auto=format&fit=crop" alt="Incident Sample">
+              <div class="bounding-box" id="ai-box" style="top: 30%; left: 25%; width: 45%; height: 40%;">
+                <span class="box-label">AI: Severe Tensile Crack (Width: 14cm)</span>
+              </div>
+            </div>
+
+            <div class="vision-results" id="vision-results-box">
+              <div class="vision-badge badge-danger">
+                <i class="fa-solid fa-triangle-exclamation"></i> VERIFIED: HIGH-RISK SLOPE CRACK DETECTED
+              </div>
+              <div class="vision-metrics">
+                <div><span>Crack Width:</span> <strong>14.2 cm (Expanding)</strong></div>
+                <div><span>Debris Volume:</span> <strong>Est. 450 m³</strong></div>
+                <div><span>Structural Threat:</span> <strong>High (NH-6 Road Bed)</strong></div>
+                <div><span>Confidence Score:</span> <strong>96.8% (YOLO-v8 Disaster Model)</strong></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 4: EMERGENCY TRIAGE & RESPONSE -->
+      <div id="tab-triage" class="tab-panel">
+        <div class="panel-header">
+          <h2><i class="fa-solid fa-truck-medical text-accent"></i> Emergency Response & NDRF Dispatch Matrix</h2>
+          <p>Automated priority queue ranking vulnerable villages and isolated road corridors for rapid rescue deployment.</p>
+        </div>
+
+        <div class="glass-card">
+          <div class="table-toolbar">
+            <h3><i class="fa-solid fa-list-check"></i> Regional Priority Queue (Sorted by Vulnerability Score)</h3>
+            <button class="btn btn-success" id="dispatch-all-btn">
+              <i class="fa-solid fa-paper-plane"></i> Dispatch NDRF Deployment Alerts
+            </button>
+          </div>
+
+          <div class="table-responsive">
+            <table class="custom-table">
+              <thead>
+                <tr>
+                  <th>Priority</th>
+                  <th>District / Village</th>
+                  <th>State</th>
+                  <th>Population at Risk</th>
+                  <th>Road Status</th>
+                  <th>AI Risk Score</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="triage-table-body">
+                <!-- Rows injected via JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 5: MULTILINGUAL ALERT BROADCAST -->
+      <div id="tab-broadcast" class="tab-panel">
+        <div class="panel-header">
+          <h2><i class="fa-solid fa-bullhorn text-accent"></i> Multilingual Emergency Broadcast Station</h2>
+          <p>Dispatch real-time warning alerts to district authorities, radio networks, and citizens in Assamese, Bengali, Hindi, and English.</p>
+        </div>
+
+        <div class="broadcast-grid">
+          <div class="glass-card broadcast-card">
+            <h3><i class="fa-solid fa-tower-cell"></i> Compose & Trigger Regional Broadcast</h3>
+
+            <div class="form-group">
+              <label>Target Language</label>
+              <select id="broadcast-lang" class="custom-select">
+                <option value="as">অসমীয়া (Assamese)</option>
+                <option value="bn">বাংলা (Bengali)</option>
+                <option value="hi">हिन्दी (Hindi)</option>
+                <option value="en">English</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label>Pre-Drafted Emergency Message</label>
+              <textarea id="broadcast-msg" class="custom-textarea" rows="4"></textarea>
+            </div>
+
+            <div class="broadcast-actions">
+              <button id="send-sms-btn" class="btn btn-primary">
+                <i class="fa-solid fa-comment-sms"></i> Broadcast Emergency SMS
+              </button>
+              <button id="speak-msg-btn" class="btn btn-warning">
+                <i class="fa-solid fa-volume-high"></i> Synthesize Audio Warning
+              </button>
+            </div>
+          </div>
+
+          <div class="glass-card log-card">
+            <h3><i class="fa-solid fa-clock-rotate-left"></i> Live Broadcast Dispatch Log</h3>
+            <div id="broadcast-logs" class="logs-container">
+              <!-- Logs injected dynamically -->
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 6: RISK ANALYTICS -->
+      <div id="tab-analytics" class="tab-panel">
+        <div class="panel-header">
+          <h2><i class="fa-solid fa-chart-pie text-accent"></i> Hydro-Meteorological & Landslide Analytics</h2>
+          <p>Comparative analytics tracking rainfall accumulation, soil saturation trends, and historical landslide occurrences across North East India.</p>
+        </div>
+
+        <div class="analytics-grid">
+          <div class="glass-card chart-card">
+            <h3><i class="fa-solid fa-chart-line"></i> 72-Hour Cumulative Rainfall vs Threshold Risk</h3>
+            <div class="chart-wrapper">
+              <canvas id="chart-rainfall"></canvas>
+            </div>
+          </div>
+
+          <div class="glass-card chart-card">
+            <h3><i class="fa-solid fa-chart-bar"></i> Road Network Connectivity Status</h3>
+            <div class="chart-wrapper">
+              <canvas id="chart-roads"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </section>
+  </main>
+
+  <!-- Live Feed Sidebar Drawer (Right Side) -->
+  <aside class="feed-drawer" id="feed-drawer">
+    <div class="drawer-header">
+      <h4><i class="fa-solid fa-satellite"></i> Live IoT Sensor Stream</h4>
+      <button class="drawer-toggle-btn" id="drawer-toggle"><i class="fa-solid fa-chevron-right"></i></button>
+    </div>
+    <div class="feed-list" id="feed-list">
+      <!-- Live items added via JS -->
+    </div>
+  </aside>
+
+  <!-- Custom App JavaScript -->
+  <script src="app.js"></script>
+</body>
+</html>

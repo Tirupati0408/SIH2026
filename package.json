@@ -1,0 +1,14 @@
+{
+  "name": "resiliner-sih2026",
+  "version": "1.0.0",
+  "private": true,
+  "description": "ResiliNER landslide early warning and disaster response platform",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "start": "node backend/src/server.js",
+    "dev": "node backend/src/server.js",
+    "test": "node --test backend/tests"
+  }
+}
